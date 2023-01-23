@@ -1,0 +1,269 @@
+#include<stdio.h>
+#include<stdlib.h>
+struct node
+{
+	int ID;
+	char gender;
+	long long phone;
+	struct node *left;
+	struct node *right;
+};
+struct node *root = NULL;
+
+struct node *search(struct node *root, int key, FILE *name)
+{
+	if(root == NULL || root->ID == key){
+		if(root!=NULL){
+			fprintf(name, "%d %c %lld\n", root->ID, root->gender, root->phone);
+		}else{
+			fprintf(name, "ID:%d not exist\n", key);
+		}
+		return root;
+	}
+	if(root->ID<key)
+		return search(root->right, key, name);
+	return search(root->left, key, name);
+}
+
+struct node *newNode(int key, char gen, long long ph)
+{
+	struct node *temp = (struct node *)malloc(sizeof(struct node));
+	temp->ID = key;
+	temp->gender = gen;
+	temp->phone = ph;
+	temp->left = NULL;
+	temp->right = NULL;
+	return temp;
+}
+
+struct node *insert(struct node *root, int key, char gen, long long ph)
+{
+	if(root == NULL)
+		return newNode(key, gen, ph);
+	if(key < root->ID)
+		root->left = insert(root->left, key, gen, ph);
+	else if(key >root->ID)
+		root->right = insert(root->right, key, gen, ph);
+	return root;
+} 
+
+struct node *maxNode(struct node* root)
+{
+	struct node *cur = root;
+	while(cur->right!=NULL){
+		cur = cur->right;
+	}
+	return cur;
+}
+
+//刪除節點 
+struct node *deleteNode(struct node* root, int key)
+{
+ 	if(root == NULL) return root;
+ 	if(key<root->ID){
+ 		root->left=deleteNode(root->left, key);
+	}else if(key>root->ID){
+	 	root->right=deleteNode(root->right, key);
+	}else{
+	 	if(root->left==NULL)
+		{
+	 		struct node *temp = root->right;
+	 		free(root);
+	 		return temp;
+		}
+		else if(root->right==NULL)
+		{
+		 	struct node *temp = root->left;
+		 	free(root);
+		 	return temp;
+		}
+	 	struct node* temp = maxNode(root->left);
+		root->ID = temp->ID;
+		root->left = deleteNode(root->left, temp->ID);
+	}
+}
+
+//計算樹高
+int tree_height(struct node* root)
+{
+	if(!root)
+		return 0;
+	else{
+		int left_height = tree_height(root->left);
+		int right_height = tree_height(root->right);
+		if(left_height >= right_height)
+			return left_height + 1;
+		else
+			return right_height +1;
+	}
+}
+
+//將Tree寫入File
+void inorder(struct node *root, FILE *name)
+{
+	if(root != NULL){
+		inorder(root->left, name);
+		fprintf(name, "%d %c %lld\n", root->ID, root->gender, root->phone);
+		inorder(root->right, name);
+	}
+}
+
+void inorder(struct node *root)
+{
+	if(root != NULL){
+		inorder(root->left);
+		printf("%d %c %lld\n", root->ID, root->gender, root->phone);
+		inorder(root->right);
+	}
+}
+
+void preorder(struct node *root, FILE *name)
+{
+	if(root != NULL){
+		fprintf(name, "%d %c %lld\n", root->ID, root->gender, root->phone);
+		preorder(root->left, name);
+		preorder(root->right, name);
+	} 
+}
+
+void preorder(struct node *root)
+{
+	if(root != NULL){
+		printf("%d %c %lld\n", root->ID, root->gender, root->phone);
+		preorder(root->left);
+		preorder(root->right);
+	} 
+}
+
+int main()
+{
+	//8個檔案 
+	FILE *fp1 = fopen("input1.txt","r");
+	FILE *fp2 = fopen("input2.txt","r");
+	FILE *output1 = fopen("output1.txt", "w+");
+	FILE *output2 = fopen("output2.txt", "w+");
+	FILE *traversal_out1 = fopen("traverse1.txt", "w+");
+	FILE *traversal_out2 = fopen("traverse2.txt", "w+");
+	FILE *search_out1 = fopen("search1.txt", "w+");
+	FILE *search_out2 = fopen("search2.txt", "w+");
+	  
+	int list[24]={0};//存放輸入的ID 
+	
+	//先讀入第一輸入資料檔，共12筆
+	printf("輸入第一輸入檔......\n");
+	for(int i=0; i<12; i++){
+        int id;
+        char gen;
+        long long ph;
+        fscanf(fp1,"%d %c %lld",&id,&gen,&ph);//讀第一輸入檔 
+        list[i]=id;
+        root = insert(root, id, gen, ph);
+    }
+    
+    //輸出第一次 LVR VLR
+    fprintf(traversal_out1,"第一輸入檔LVR:\n");
+    inorder(root, traversal_out1);
+    fprintf(traversal_out1, "\n第一輸入檔VLR:\n");
+    preorder(root, traversal_out1);
+    
+    //進行第一遍搜尋: 第6筆 x 第2筆 第9筆 x 資料 
+    fprintf(search_out1, "first search:\n");
+	search(root, list[5], search_out1);
+	search(root, 657535, search_out1);
+	search(root, list[1], search_out1);
+	search(root, list[8], search_out1);
+	search(root, 031570, search_out1);
+	
+	//計算樹高 
+	printf("第一輸入檔樹高:%d\n\n",tree_height(root));
+	//第一輸出檔 
+	preorder(root, output1);
+	fclose(output1); 	
+	//刪除整個樹
+	for(int i=0; i<12; i++){
+		root = deleteNode(root, list[i]);
+	}
+	
+	//讀第一輸出檔
+	FILE *output_1 = fopen("output1.txt", "r");
+	for(int i=0; i<12; i++){
+        int id;
+        char gen;
+        long long ph;
+        fscanf(output_1,"%d %c %lld",&id,&gen,&ph);
+		//printf("%d %c %lld\n", id, gen, ph); 
+        root = insert(root, id, gen, ph);
+    }
+    
+    //輸出第二次 LVR VLR
+	printf("第一輸出檔LVR:\n");
+    inorder(root);
+    printf("\n");
+    printf("第一輸出檔VLR:\n");
+    preorder(root);
+    printf("\n");
+   	printf("第一輸出檔樹高:%d\n\n",tree_height(root));
+   	
+   	//讀入第二輸入資料檔,共12筆
+   	printf("輸入第二輸入檔......\n");
+    for(int i=0; i<12; i++){
+        int id;
+        char gen;
+        long long ph;
+        fscanf(fp2,"%d %c %lld",&id,&gen,&ph);
+        list[12+i]=id;
+        root = insert(root, id, gen, ph);
+    }
+    
+    //輸出第三次 LVR VLR
+    fprintf(traversal_out2, "第二輸入檔LVR:\n");
+    inorder(root, traversal_out2);
+    fprintf(traversal_out2, "\n第二輸入檔VLR:\n");
+    preorder(root, traversal_out2);
+  
+    //進行第二遍搜尋: 第17筆 x 第20筆 第24筆 x 資料 
+	fprintf(search_out2 ,"second search:\n");   
+    search(root, list[16], search_out2);
+	search(root, 649980, search_out2);
+	search(root, list[20], search_out2);
+	search(root, list[23], search_out2);
+	search(root, 248966, search_out2);
+	
+	//計算樹高 
+	printf("第二輸入檔樹高:%d\n\n",tree_height(root));
+	preorder(root, output2); //第二輸出檔 
+	fclose(output2);
+	//刪除整個樹
+	for(int i=0; i<24; i++){
+		root = deleteNode(root, list[i]);
+	}
+	
+	//讀第二輸出檔
+	FILE *output_2 = fopen("output2.txt", "r");
+	for(int i=0; i<24; i++){
+        int id;
+        char gen;
+        long long ph;
+        fscanf(output_2,"%d %c %lld",&id,&gen,&ph); 
+        root = insert(root, id, gen, ph);
+    }
+	
+	//輸出第四次 LVR VLR
+	printf("第二輸出檔LVR:\n");
+	inorder(root);
+	printf("\n");
+	printf("第二輸出檔VLR:\n");
+	preorder(root);
+	printf("\n第二輸出檔樹高:%d",tree_height(root));
+
+	//關閉八個檔案 
+	fclose(fp1);
+	fclose(fp2);
+	fclose(output_1);
+	fclose(output2);
+	fclose(traversal_out1);
+	fclose(traversal_out2);
+	fclose(search_out1);
+	fclose(search_out2);
+	return 0;
+}
